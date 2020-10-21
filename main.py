@@ -5,11 +5,34 @@ import glob
 import os, shutil, glob, os.path
 import matplotlib.pyplot as plt
 
-def vectorisation():
-    return
+def vectorisation(image, vocabulaire):
+    greyImage = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+    sift = cv2.SIFT_create()
+    keypoints, descriptors = sift.detectAndCompute(greyImage,None)
+    #FAIRE LE VECTEUR
+    return #VECTEUR
 
-def main():
-    #siftDescriptors = np.array()
+def baseApprentissage():
+    files = ['llama', 'pizza', 'octopus', 'lotus']
+    first = True
+    filenameList = []
+
+    for fn in files:
+        for fileName in glob.glob('images/'+fn+'/train/*.jpg'):
+            image = cv2.imread(fileName)
+            if first:
+                first = False
+                #PRECISER VOCABULAIRE
+                matriceVectors = np.array(vectorisation(image, vocabulaire))
+            else:
+                #PRECISER VOCABULAIRE
+                np.append(matriceVectors, vectorisation(image, vocabulaire))
+            filenameList.append(fileName)
+            np.savetxt('filenames.txt', fileName)
+
+    return filenameList, matriceVectors
+
+def createVocabulaire():
     files = ['llama', 'pizza', 'octopus', 'lotus']
     N = 100
     first = True
@@ -25,29 +48,27 @@ def main():
                 siftDescriptors = np.array(descriptors)
             else:
                 np.append(siftDescriptors, np.array(descriptors))
-            #cv2.drawKeypoints(greyImage,keypoints,image)
-            #cv2.imshow('sift_keypoints',image)
-            #Z = np.random.rand(2000,2000)
-            #plt.imsave('center/%03i.png'%i,Z)
 
     kmeans = KMeans(n_clusters=N, random_state=0).fit(siftDescriptors)
     centers = kmeans.cluster_centers_
     np.savetxt('center.txt', centers)
 
-    totalVariance = np.zeros((500,))
+    return kmeans, siftDescriptors
+
+def varianceTotale(siftDescriptors):
+    totalVariance = np.zeros((100,))
     for K in range(1,100):
         clust = KMeans(n_clusters=K,n_init=3,verbose=0)
         Ckm=clust.fit_predict(siftDescriptors)
         totalVariance[K] = clust.inertia_
-        #print(J[K])
 
-    plt.plot(np.arange(1,500),totalVariance[1:500], color = 'red', linestyle = 'dashed', linewidth = 2, markerfacecolor = 'blue', markersize = 5)
+    #Affichage de la variance totale
+    plt.plot(np.arange(1,100),totalVariance[1:100], color = 'red', linestyle = 'dashed', linewidth = 2, markerfacecolor = 'blue', markersize = 5)
     plt.show()
-    #pplt.title('Variance totale')
-    #for i, m in enumerate(kmeans.labels_):
-    #    print("    Copy: %s / %s" %(i, len(kmeans.labels_)), end="\r")
-    #    shutil.copy(filelist[i], targetdir + str(m) + "_" + str(i) + ".jpg")
 
+def main():
+    vocabulaire, siftDescriptors = createVocabulaire()
+    varianceTotale(siftDescriptors)
     cv2.waitKey(0)
 
 if __name__ == "__main__":
